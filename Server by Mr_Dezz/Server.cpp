@@ -1,30 +1,31 @@
 ﻿#include "Server.h"
-#include <iostream>
-#include <stdio.h>
 
 using namespace std;
 
-const char IP_SERV[] = "127.0.0.1"; // Enter local Server IP address
+const char Server::IP_SERV[] = "127.0.0.1";
 
-Server::Server(int port) {
+Server::Server(int port) : ServSock(INVALID_SOCKET) {
     PORT_NUM = port;
 
     erStat = inet_pton(AF_INET, IP_SERV, &ip_to_num);
-    if (erStat <= 0) {
+    if (erStat <= 0) 
+    {
         cout << "Error in IP translation to special numeric format" << endl;
         return;
     }
 
     WSADATA wsData;
     erStat = WSAStartup(MAKEWORD(2, 2), &wsData);
-    if (erStat != 0) {
+    if (erStat != 0) 
+    {
         cout << "Error WinSock version initialization #" << WSAGetLastError() << endl;
         return;
     }
     cout << "WinSock initialization is OK" << endl;
 
     ServSock = socket(AF_INET, SOCK_STREAM, 0);
-    if (ServSock == INVALID_SOCKET) {
+    if (ServSock == INVALID_SOCKET) 
+    {
         cout << "Error initializing socket # " << WSAGetLastError() << endl;
         WSACleanup();
         return;
@@ -37,7 +38,8 @@ Server::Server(int port) {
     servInfo.sin_port = htons(PORT_NUM);
 
     erStat = bind(ServSock, (sockaddr*)&servInfo, sizeof(servInfo));
-    if (erStat != 0) {
+    if (erStat != 0) 
+    {
         cout << "Error binding socket to server info. Error # " << WSAGetLastError() << endl;
         closesocket(ServSock);
         WSACleanup();
@@ -46,7 +48,8 @@ Server::Server(int port) {
     cout << "Binding socket to Server info is OK" << endl;
 
     erStat = listen(ServSock, SOMAXCONN);
-    if (erStat != 0) {
+    if (erStat != 0) 
+    {
         cout << "Can't start listening. Error # " << WSAGetLastError() << endl;
         closesocket(ServSock);
         WSACleanup();
@@ -66,9 +69,11 @@ void Server::Run() {
     int clientInfo_size = sizeof(clientInfo);
     serverStatus = true;
 
-    while (serverStatus) {
+    while (serverStatus) 
+    {
         SOCKET ClientConn = accept(ServSock, (sockaddr*)&clientInfo, &clientInfo_size);
-        if (ClientConn == INVALID_SOCKET) {
+        if (ClientConn == INVALID_SOCKET) 
+        {
             cout << "Client detected, but can't connect. Error # " << WSAGetLastError() << endl;
             closesocket(ClientConn);
             continue;
@@ -87,6 +92,15 @@ void Server::Stop() {
     serverStatus = false;
 }
 
+void Server::TryEndChat(vector<char> clientBuff, SOCKET ClientConn) {
+    if (clientBuff[0] == 'x' && clientBuff[1] == 'x' && clientBuff[2] == 'x')
+    {
+        shutdown(ClientConn, SD_BOTH);
+        closesocket(ClientConn);
+        return;
+    }
+};
+
 void Server::HandleClient(SOCKET ClientConn) {
     vector<char> servBuff(BUFF_SIZE), clientBuff(BUFF_SIZE);
     short packet_size = 0;
@@ -97,18 +111,19 @@ void Server::HandleClient(SOCKET ClientConn) {
 
         cout << "Client: " << servBuff.data() << endl;
 
-        if (clientBuff[0] == 'x' && clientBuff[1] == 'x' && clientBuff[2] == 'x') {
-            shutdown(ClientConn, SD_BOTH);
-            closesocket(ClientConn);
-            return;
-        }
+        TryEndChat(clientBuff, ClientConn);
+
         int number = 0; 
+
         for (char ch : servBuff)
+        {
             if (isdigit(ch))   number = number * 10 + (ch - '0');
+        }
 
         string response = "No";
         int root = static_cast<int>(sqrt(number));
-        if (root * root == number) {
+        if (root * root == number) 
+        {
             response = "Yes";
         }
         cout << "Your message: "<< number;

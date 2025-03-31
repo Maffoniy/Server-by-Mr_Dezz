@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+#include <stdio.h>
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <iostream>
@@ -17,7 +19,7 @@ private:
     int erStat;                             // Keeps socket errors status
     bool serverStatus = false;              // Controlls users connection
     std::vector<std::thread> clientThreads; // thread vector for each user
-
+    static const char IP_SERV[];            // Enter local Server IP address
 public:
     Server(int port);
     ~Server();
@@ -26,6 +28,8 @@ public:
     void Run();
     //Stoping connecting clients, created thread still online
     void Stop();
+
+    void TryEndChat(std::vector<char> clientBuff, SOCKET ClientConn);
     //Exchange text data between Server and Client. Disconnection if a client send "xxx"       
     void HandleClient(SOCKET ClientConn);
 };
